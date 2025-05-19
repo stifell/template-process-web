@@ -23,4 +23,9 @@ public class MainController {
         model.addAttribute("currentURI", request.getRequestURI());
         return "upload-page";
     }
+
+    @GetMapping("/login")
+    public String login() {
+        return "login-page";
+    }
 }

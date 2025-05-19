@@ -1,0 +1,36 @@
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      data-bs-theme="dark">
+
+<div th:fragment="header">
+    <div class="container">
+        <header class="d-flex flex-wrap align-items-center justify-content-center justify-content-md-between py-3 mb-4 border-bottom">
+            <div class="col-md-3 mb-2 mb-md-0">
+                <a href="/" class="d-inline-flex link-body-emphasis text-decoration-none"></a>
+            </div>
+
+            <ul class="nav col-12 col-md-auto mb-2 justify-content-center mb-md-0">
+                <li><a href="/" class="nav-link px-2" th:classappend="${currentURI == '/'} ? 'link-secondary'">Главная
+                    страница</a></li>
+                <li><a href="/upload" class="nav-link px-2"
+                       th:classappend="${currentURI == '/upload'} ? 'link-secondary'">Генерация файлов</a></li>
+                <li><a href="/history" class="nav-link px-2"
+                       th:classappend="${currentURI == '/history'} ? 'link-secondary'">История генерации</a></li>
+            </ul>
+
+            <div class="col-md-3 text-end"
+                 sec:authorize="isAnonymous()">
+                <a href="/login" class="btn btn-outline-primary me-2">Войти</a>
+                <a href="/registration" class="btn btn-primary">Зарегистрироваться</a>
+            </div>
+
+            <div class="col-md-3 text-end"
+                 sec:authorize="isAuthenticated()">
+                <span class="me-3"><strong sec:authentication="name"></strong></span>
+                <form th:action="@{/logout}" method="post" class="d-inline">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <button type="submit" class="btn btn-outline-danger">Выйти</button>
+                </form>
+            </div>
+        </header>
+    </div>
+</div>
