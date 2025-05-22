@@ -20,7 +20,7 @@ public class RegistrationController {
     private UserService userService;
 
     @GetMapping("/registration")
-    public String registrationForm(Model model) {
+    public String getRegistrationPage(Model model) {
         model.addAttribute("user", new User());
         return "registration-page";
     }

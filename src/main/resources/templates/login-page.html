@@ -9,16 +9,17 @@
           integrity="sha384-tViUnnbYAV00FLIhhi3v/dWt3Jxw4gZQcNoSCxCIFNJVCx7/D55/wXsrNIRANwdD" crossorigin="anonymous">
 </head>
 <body>
+<header th:insert="~{fragments/simple-header :: simple-header}"></header>
 <div class="container d-flex justify-content-center align-items-center" style="min-height: 70vh;">
     <div class="card shadow-lg rounded-2 w-100" style="max-width: 400px;">
         <div class="card-body p-4">
             <h2 class="card-title text-center mb-4">Вход в систему</h2>
 
-            <div th:if="${param.error}" class="alert alert-danger" role="alert">
-                Неверное имя пользователя или пароль.
+            <div th:if="${errorMessage}" class="alert alert-danger" role="alert">
+                <span th:text="${errorMessage}"></span>
             </div>
-            <div th:if="${param.logout}" class="alert alert-success" role="alert">
-                Вы успешно вышли.
+            <div th:if="${successMessage}" class="alert alert-success" role="alert">
+                <span th:text="${successMessage}"></span>
             </div>
 
             <form th:action="@{/login}" method="post">
