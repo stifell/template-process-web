@@ -1,4 +1,4 @@
-package com.stifell.spring.process_web.doccraft.dao;
+package com.stifell.spring.process_web.doccraft.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import com.stifell.spring.process_web.doccraft.entity.User;
