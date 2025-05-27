@@ -14,13 +14,16 @@
 <header th:insert="~{fragments/header :: header}"></header>
 <div class="container mt-5">
     <h1 class="mb-4">Загрузка шаблона документа</h1>
+    <!-- Форма загрузки шаблонов -->
     <form method="post" enctype="multipart/form-data" action="/upload">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
         <div class="mb-3 file-input-custom">
             <label for="file" class="form-label">Выберите файл шаблона (только .docx):</label>
             <input type="file" class="form-control" id="file" name="file" accept=".docx" multiple>
         </div>
         <button type="submit" class="btn btn-primary">Загрузить</button>
     </form>
+
     <div th:if="${files}" class="alert alert-success mt-3" role="alert">
         <h3 class="mt-4">Выбранные файлы</h3>
         <ul>
@@ -30,20 +33,22 @@
     <div th:if="${errorMessage}" class="alert alert-danger mt-3" role="alert">
         <span th:text="${errorMessage}"></span>
     </div>
-    <div id="tagInputs" class="mt-4" th:if="${fileUploaded}">
+    <!-- Форма ввода значений тегов -->
+    <div th:if="${fileUploaded}" class="mt-4">
         <h2 class="mb-3">Значения тегов</h2>
         <form method="post" action="/generate">
-            <div th:if="${tags}">
-                <div th:each="tag : ${tags}">
-                    <div class="mb-3">
-                        <label th:for="${'tag_' + tag}" th:text="${tag}" class="form-label">Тег</label>
-                        <input type="text" class="form-control"
-                               th:attr="id='tag_' + ${tag}, name='tag_' + ${tag}, value=''">
-                    </div>
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <div th:each="tag : ${tags}">
+                <div class="mb-3">
+                    <label th:text="${tag}" class="form-label"></label>
+                    <input type="text"
+                           th:name="${tag}"
+                           th:value="${tagMap.get(tag)}"
+                           class="form-control"
+                           placeholder="Введите значение"/>
                 </div>
             </div>
-            <input type="hidden" name="tempFilePath" th:value="${tempFilePath}">
-            <button type="submit" class="btn btn-primary">Сгенерировать</button>
+            <button type="submit" class="btn btn-success">Сгенерировать</button>
         </form>
     </div>
 </div>

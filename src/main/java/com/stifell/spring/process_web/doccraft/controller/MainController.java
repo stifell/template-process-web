@@ -11,16 +11,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 @Controller
 public class MainController {
-
     @GetMapping("/")
     public String getHomePage(HttpServletRequest request, Model model) {
         model.addAttribute("currentURI", request.getRequestURI());
         return "home-page";
-    }
-
-    @GetMapping("/upload")
-    public String getUploadPage(HttpServletRequest request, Model model) {
-        model.addAttribute("currentURI", request.getRequestURI());
-        return "upload-page";
     }
 }
