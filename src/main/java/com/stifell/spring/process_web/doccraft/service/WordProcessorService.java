@@ -1,5 +1,6 @@
 package com.stifell.spring.process_web.doccraft.service;
 
+import com.stifell.spring.process_web.doccraft.model.TagMap;
 import org.apache.poi.hwpf.HWPFDocument;
 import org.apache.poi.hwpf.extractor.WordExtractor;
 import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
@@ -9,9 +10,6 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -20,12 +18,10 @@ import java.util.regex.Pattern;
  */
 @Service
 public class WordProcessorService {
-
     private final String regex = "\\$\\{[^}]+\\}";
-    private Set<String> uniqueTags;
 
-    public Map<String, String> writeTagsToSet(File[] files) throws IOException {
-        Map<String, String> tagsMap = new HashMap<>();
+    public TagMap writeTagsToSet(File[] files) throws IOException {
+        TagMap tagsMap = new TagMap();
         Pattern pattern = Pattern.compile(regex);
         for (File file : files) {
             if (file.isFile() && (file.getName().endsWith(".doc") || file.getName().endsWith(".docx"))) {
@@ -34,7 +30,7 @@ public class WordProcessorService {
                 while (matcher.find()) {
                     String tag = matcher.group();
                     if (!tagsMap.containsKey(tag)) {
-                        tagsMap.put(tag, "");
+                        tagsMap.addTag(tag, "");
                     }
                 }
             }
