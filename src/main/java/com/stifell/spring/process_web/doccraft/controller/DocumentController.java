@@ -1,8 +1,7 @@
 package com.stifell.spring.process_web.doccraft.controller;
 
-import com.stifell.spring.process_web.doccraft.dto.FileUploadDTO;
+import com.stifell.spring.process_web.doccraft.dto.FileContentDTO;
 import com.stifell.spring.process_web.doccraft.dto.GenerationRequestDTO;
-import com.stifell.spring.process_web.doccraft.dto.ProcessedDocumentDTO;
 import com.stifell.spring.process_web.doccraft.exception.FileProcessingException;
 import com.stifell.spring.process_web.doccraft.exception.InvalidFileTypeException;
 import com.stifell.spring.process_web.doccraft.exception.ResourceNotFoundException;
@@ -51,14 +50,14 @@ public class DocumentController {
                                    RedirectAttributes redirectAttributes,
                                    HttpSession session) {
         try {
-            List<FileUploadDTO> uploadedFiles = fileStorageService.storeFiles(files);
+            List<FileContentDTO> uploadedFiles = fileStorageService.storeFiles(files);
             TagMap tagMap = documentService.extractTags(uploadedFiles);
 
             session.setAttribute("generationData", new GenerationRequestDTO(tagMap, uploadedFiles));
 
             redirectAttributes.addFlashAttribute("fileNames",
                     uploadedFiles.stream()
-                            .map(FileUploadDTO::getOriginalName)
+                            .map(FileContentDTO::getFileName)
                             .collect(Collectors.toList()));
 
             redirectAttributes.addFlashAttribute("tags", tagMap.keySet());
@@ -88,7 +87,7 @@ public class DocumentController {
         TagMap tagMap = generationData.getTagMap();
         tagMap.replaceAll(formParams::getOrDefault);
 
-        List<ProcessedDocumentDTO> processedDocs = documentService.processedDocuments(
+        List<FileContentDTO> processedDocs = documentService.processedDocuments(
                 generationData.getFiles(),
                 tagMap
         );

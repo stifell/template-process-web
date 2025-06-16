@@ -1,6 +1,6 @@
 package com.stifell.spring.process_web.doccraft.service;
 
-import com.stifell.spring.process_web.doccraft.dto.ProcessedDocumentDTO;
+import com.stifell.spring.process_web.doccraft.dto.FileContentDTO;
 import com.stifell.spring.process_web.doccraft.exception.ZipCreationException;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -17,11 +17,11 @@ import java.util.zip.ZipOutputStream;
  */
 @Service
 public class ZipService {
-    public Resource createZipArchive(List<ProcessedDocumentDTO> documents) {
+    public Resource createZipArchive(List<FileContentDTO> documents) {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
              ZipOutputStream zos = new ZipOutputStream(baos)) {
 
-            for (ProcessedDocumentDTO doc : documents) {
+            for (FileContentDTO doc : documents) {
                 ZipEntry entry = new ZipEntry(doc.getFileName());
                 zos.putNextEntry(entry);
                 zos.write(doc.getContent());

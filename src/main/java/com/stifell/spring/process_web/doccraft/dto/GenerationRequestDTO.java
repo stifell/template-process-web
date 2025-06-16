@@ -9,9 +9,9 @@ import java.util.List;
  */
 public class GenerationRequestDTO {
     private TagMap tagMap;
-    private List<FileUploadDTO> files;
+    private List<FileContentDTO> files;
 
-    public GenerationRequestDTO(TagMap tagMap, List<FileUploadDTO> files) {
+    public GenerationRequestDTO(TagMap tagMap, List<FileContentDTO> files) {
         this.tagMap = tagMap;
         this.files = files;
     }
@@ -24,11 +24,11 @@ public class GenerationRequestDTO {
         this.tagMap = tagMap;
     }
 
-    public List<FileUploadDTO> getFiles() {
+    public List<FileContentDTO> getFiles() {
         return files;
     }
 
-    public void setFiles(List<FileUploadDTO> files) {
+    public void setFiles(List<FileContentDTO> files) {
         this.files = files;
     }
 }
