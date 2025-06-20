@@ -59,14 +59,19 @@
         <h2 class="mb-3">Значения тегов</h2>
         <form method="post" action="/generate">
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-            <div th:each="tag : ${tags}">
+            <div th:each="f : ${fields}">
                 <div class="mb-3">
-                    <label th:text="${tag}" class="form-label"></label>
+                    <label class="form-label d-flex align-items-center gap-2">
+                        <span th:text="${f.hint}">Подсказка</span>
+                        <i class="bi bi-info-circle"
+                           th:title="${f.tag}"
+                           style="cursor: help;"></i>
+                    </label>
                     <input type="text"
-                           th:name="${tag}"
-                           th:value="${tagMap.get(tag)}"
-                           class="form-control"
-                           placeholder="Введите значение"/>
+                           th:name="${f.tag}"
+                           th:value="${f.value}"
+                           th:placeholder="${f.example}"
+                           class="form-control"/>
                 </div>
             </div>
             <button type="submit" class="btn btn-success">Сгенерировать</button>

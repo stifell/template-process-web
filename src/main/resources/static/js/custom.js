@@ -1,55 +1,53 @@
+const KEY_FILES = 'doccraft.selectedFiles';
+const KEY_COUNT = 'doccraft.selectedAuthorCount';
+
 function updateFileList(files) {
     const fileList = document.getElementById('fileList');
     const fileListContainer = document.getElementById('fileListContainer');
     fileList.innerHTML = '';
 
-    if (files.length === 0) {
+    if (!files || files.length === 0) {
         fileListContainer.style.display = 'none';
         return;
     }
 
-    for (let i = 0; i < files.length; i++) {
+    Array.from(files).forEach(f => {
         const li = document.createElement('li');
-        li.textContent = files[i].name;
+        li.textContent = f;
         fileList.appendChild(li);
-    }
-
+    });
     fileListContainer.style.display = 'block';
 }
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', () => {
     const fileInput = document.getElementById('file');
+    const authorSelect = document.getElementById('authorCount');
+    const uploadForm = document.querySelector('form[action="/upload"]');
 
-    const serverFiles = document.querySelectorAll('#fileList li');
-    const fileListContainer = document.getElementById('fileListContainer');
-
-    if (serverFiles.length > 0) {
-        fileListContainer.style.display = 'block';
-    } else if (fileInput.files.length > 0) {
-        updateFileList(fileInput.files);
+    const savedCount = localStorage.getItem(KEY_COUNT);
+    if (savedCount) {
+        authorSelect.value = savedCount;
     }
 
-    document.querySelector('form[action="/upload"] button[type="submit"]')
-        .addEventListener('click', function () {
-            const files = fileInput.files;
-            if (files.length > 0) {
-                const fileNames = Array.from(files).map(file => file.name);
-                localStorage.setItem('selectedFiles', JSON.stringify(fileNames));
-            }
-        });
-
-    const savedFiles = localStorage.getItem('selectedFiles');
-    if (savedFiles) {
-        const fileNames = JSON.parse(savedFiles);
-        const fileList = document.getElementById('fileList');
-
-        fileNames.forEach(fileName => {
-            const li = document.createElement('li');
-            li.textContent = fileName;
-            fileList.appendChild(li);
-        });
-
-        fileListContainer.style.display = 'block';
-        localStorage.removeItem('selectedFiles');
+    const savedFiles = JSON.parse(localStorage.getItem(KEY_FILES) || '[]');
+    if (savedFiles.length) {
+        updateFileList(savedFiles);
     }
+
+    fileInput.addEventListener('change', () => {
+        const names = Array.from(fileInput.files).map(f => f.name);
+        localStorage.setItem(KEY_FILES, JSON.stringify(names));
+        updateFileList(names);
+    });
+
+    authorSelect.addEventListener('change', () => {
+        localStorage.setItem(KEY_COUNT, authorSelect.value);
+    });
+
+    uploadForm.addEventListener('submit', () => {
+        // если файлы в инпуте — обновить
+        const names = Array.from(fileInput.files).map(f => f.name);
+        localStorage.setItem(KEY_FILES, JSON.stringify(names));
+        localStorage.setItem(KEY_COUNT, authorSelect.value);
+    });
 });

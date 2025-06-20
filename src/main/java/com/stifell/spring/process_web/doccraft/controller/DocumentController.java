@@ -2,12 +2,14 @@ package com.stifell.spring.process_web.doccraft.controller;
 
 import com.stifell.spring.process_web.doccraft.dto.FileContentDTO;
 import com.stifell.spring.process_web.doccraft.dto.GenerationRequestDTO;
+import com.stifell.spring.process_web.doccraft.dto.TagFieldDTO;
 import com.stifell.spring.process_web.doccraft.exception.FileProcessingException;
 import com.stifell.spring.process_web.doccraft.exception.InvalidFileTypeException;
 import com.stifell.spring.process_web.doccraft.exception.ResourceNotFoundException;
 import com.stifell.spring.process_web.doccraft.model.TagMap;
 import com.stifell.spring.process_web.doccraft.service.DocumentService;
 import com.stifell.spring.process_web.doccraft.service.FileStorageService;
+import com.stifell.spring.process_web.doccraft.service.TagMetadataService;
 import com.stifell.spring.process_web.doccraft.service.ZipService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -38,6 +40,8 @@ public class DocumentController {
     private DocumentService documentService;
     @Autowired
     private ZipService zipService;
+    @Autowired
+    private TagMetadataService tagMetadataService;
 
     @GetMapping("/upload")
     public String getUploadPage(HttpServletRequest request, Model model) {
@@ -65,6 +69,13 @@ public class DocumentController {
             redirectAttributes.addFlashAttribute("tags", tagMap.keySet());
             redirectAttributes.addFlashAttribute("tagMap", tagMap);
             redirectAttributes.addFlashAttribute("fileUploaded", true);
+            List<TagFieldDTO> fields = tagMap.keySet().stream().map(tag ->
+            {
+                String value = tagMap.get(tag);
+                var md = tagMetadataService.find(tag);
+                return new TagFieldDTO(tag, value, md.getHint(), md.getExample());
+            }).collect(Collectors.toList());
+            redirectAttributes.addFlashAttribute("fields", fields);
 
         } catch (InvalidFileTypeException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
