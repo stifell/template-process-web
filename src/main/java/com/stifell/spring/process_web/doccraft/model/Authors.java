@@ -8,10 +8,12 @@ import java.util.List;
  */
 public class Authors {
     private List<TagMap> tagAuthors;
+    private int authorCount;
 
-    public Authors(int countAuthors) {
+    public Authors(int authorCount) {
+        this.authorCount = authorCount;
         tagAuthors = new ArrayList<>();
-        for (int i = 0; i < countAuthors; i++) {
+        for (int i = 0; i < authorCount; i++) {
             tagAuthors.add(new TagMap());
         }
     }
@@ -34,6 +36,10 @@ public class Authors {
 
     public List<TagMap> getTagMaps() {
         return tagAuthors;
+    }
+
+    public int getAuthorCount() {
+        return authorCount;
     }
 
     public void addTagToAuthor(int authorIndex, String tag, String value) {

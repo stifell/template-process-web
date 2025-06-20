@@ -20,6 +20,21 @@
             <form method="post" enctype="multipart/form-data" action="/upload">
                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                 <div class="mb-3 file-input-custom">
+                    <label for="authorCount" class="form-label">Количество авторов:</label>
+                    <select class="form-select" id="authorCount" name="authorCount">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                    </select>
+                </div>
+
+                <div class="mb-3 file-input-custom">
                     <label for="file" class="form-label">Выберите файл шаблона (только .docx):</label>
                     <input type="file" class="form-control" id="file" name="file" accept=".docx" multiple
                            onchange="updateFileList(this.files)">
@@ -44,20 +59,6 @@
         <h2 class="mb-3">Значения тегов</h2>
         <form method="post" action="/generate">
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-            <div class="mb-3">
-                <label for="authorCount" class="form-label">Количество авторов:</label>
-                <select class="form-select" id="authorCount" name="authorCount">
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                    <option value="6">6</option>
-                    <option value="7">7</option>
-                    <option value="8">8</option>
-                    <option value="9">9</option>
-                </select>
-            </div>
             <div th:each="tag : ${tags}">
                 <div class="mb-3">
                     <label th:text="${tag}" class="form-label"></label>

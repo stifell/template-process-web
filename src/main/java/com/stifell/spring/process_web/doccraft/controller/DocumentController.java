@@ -47,11 +47,13 @@ public class DocumentController {
 
     @PostMapping("/upload")
     public String handleFileUpload(@RequestParam("file") MultipartFile[] files,
+                                   @RequestParam("authorCount") int authorCount,
                                    RedirectAttributes redirectAttributes,
                                    HttpSession session) {
         try {
+            session.setAttribute("authorCount", authorCount);
             List<FileContentDTO> uploadedFiles = fileStorageService.storeFiles(files);
-            TagMap tagMap = documentService.extractTags(uploadedFiles);
+            TagMap tagMap = documentService.extractTags(uploadedFiles, authorCount);
 
             session.setAttribute("generationData", new GenerationRequestDTO(tagMap, uploadedFiles));
 
@@ -77,6 +79,8 @@ public class DocumentController {
     @PostMapping("/generate")
     public ResponseEntity<Resource> generateDocument(@RequestParam Map<String, String> formParams,
                                                      HttpSession session) {
+
+        int authorCount = (int) session.getAttribute("authorCount");
         GenerationRequestDTO generationData =
                 (GenerationRequestDTO) session.getAttribute("generationData");
 
@@ -89,7 +93,8 @@ public class DocumentController {
 
         List<FileContentDTO> processedDocs = documentService.processedDocuments(
                 generationData.getFiles(),
-                tagMap
+                tagMap,
+                authorCount
         );
 
         Resource zipResource = zipService.createZipArchive(processedDocs);

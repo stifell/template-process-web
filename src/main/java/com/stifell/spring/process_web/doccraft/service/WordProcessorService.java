@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -18,23 +19,34 @@ import java.util.regex.Pattern;
  */
 @Service
 public class WordProcessorService {
-    private final String regex = "\\$\\{[^}]+\\}";
+    private final Pattern TAG_PATTERN = Pattern.compile("\\$\\{[^}]+\\}");
+    private static final Pattern AUTHOR1_TAG_PATTERN =
+            Pattern.compile("\\$\\{key_ria_author1_([^}]+)\\}");
 
-    public TagMap writeTagsToSet(File[] files) throws IOException {
+    public TagMap writeTagsToSet(File[] files, int authorCount) throws IOException {
         TagMap tagsMap = new TagMap();
-        Pattern pattern = Pattern.compile(regex);
         for (File file : files) {
             if (file.isFile() && (file.getName().endsWith(".doc") || file.getName().endsWith(".docx"))) {
                 String text = readTextFromFile(file);
-                Matcher matcher = pattern.matcher(text);
+                Matcher matcher = TAG_PATTERN.matcher(text);
                 while (matcher.find()) {
-                    String tag = matcher.group();
-                    if (!tagsMap.containsKey(tag)) {
-                        tagsMap.addTag(tag, "");
+                    tagsMap.putIfAbsent(matcher.group(), "");
+                }
+            }
+        }
+        if (authorCount > 1) {
+            for (String baseTag : new ArrayList<>(tagsMap.keySet())) {
+                Matcher m = AUTHOR1_TAG_PATTERN.matcher(baseTag);
+                if (m.matches()) {
+                    String suffix = m.group(1);
+                    for (int i = 2; i <= authorCount; i++) {
+                        String newTag = String.format("${key_ria_author%d_%s}", i, suffix);
+                        tagsMap.putIfAbsent(newTag, "");
                     }
                 }
             }
         }
+
         return tagsMap;
     }
 
