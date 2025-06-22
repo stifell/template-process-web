@@ -36,6 +36,7 @@ public class WebSecurityConfig {
                 .authenticationProvider(authProvider)
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/", "/registration", "/login").permitAll()
+                        .requestMatchers("/images/**", "/css/**", "/js/**").permitAll()
                         .requestMatchers("/upload", "/history", "/generate").hasAnyRole("USER", "ADMIN")
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
