@@ -7,13 +7,11 @@ import com.stifell.spring.process_web.doccraft.exception.FileProcessingException
 import com.stifell.spring.process_web.doccraft.exception.InvalidFileTypeException;
 import com.stifell.spring.process_web.doccraft.exception.ResourceNotFoundException;
 import com.stifell.spring.process_web.doccraft.model.TagMap;
-import com.stifell.spring.process_web.doccraft.service.DocumentService;
-import com.stifell.spring.process_web.doccraft.service.FileStorageService;
-import com.stifell.spring.process_web.doccraft.service.TagMetadataService;
-import com.stifell.spring.process_web.doccraft.service.ZipService;
+import com.stifell.spring.process_web.doccraft.service.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -26,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -42,6 +41,10 @@ public class DocumentController {
     private ZipService zipService;
     @Autowired
     private TagMetadataService tagMetadataService;
+    @Autowired
+    private CsvExportService csvExportService;
+    @Autowired
+    private CsvImportService csvImportService;
 
     @GetMapping("/upload")
     public String getUploadPage(HttpServletRequest request, Model model) {
@@ -114,5 +117,56 @@ public class DocumentController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=documents.zip")
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(zipResource);
+    }
+
+    @GetMapping("/tags/export")
+    public ResponseEntity<Resource> exportTags(HttpSession session) {
+        @SuppressWarnings("unchecked")
+        TagMap tagMap = ((GenerationRequestDTO) session.getAttribute("generationData")).getTagMap();
+        if (tagMap == null) {
+            throw new ResourceNotFoundException("Нет тегов для экспорта в csv");
+        }
+        ByteArrayResource csv = csvExportService.exportyTagsAsCsv(tagMap);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=tags.csv")
+                .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
+                .body(csv);
+    }
+
+    @PostMapping("/tags/import")
+    public String importTags(@RequestParam("csvFile") MultipartFile csvFile,
+                             HttpSession session,
+                             RedirectAttributes redirectAttributes) {
+        try {
+            List<TagFieldDTO> imported = csvImportService.importFromCsv(csvFile);
+
+            GenerationRequestDTO generationData = (GenerationRequestDTO) session.getAttribute("generationData");
+            TagMap tagMap = generationData.getTagMap();
+
+            imported.forEach(f -> tagMap.put(f.getTag(), f.getValue()));
+            session.setAttribute("generationData", generationData);
+
+            List<TagFieldDTO> fields = imported.stream()
+                            .map(f -> {
+                                var md = tagMetadataService.find(f.getTag());
+                                return new TagFieldDTO(
+                                        f.getTag(),
+                                        f.getValue(),
+                                        md.getHint(),
+                                        md.getExample()
+                                );
+                            }).collect(Collectors.toList());
+
+            redirectAttributes.addFlashAttribute("fileUploaded", true);
+            redirectAttributes.addFlashAttribute("fields", fields);
+            redirectAttributes.addFlashAttribute("tags", tagMap.keySet());
+            redirectAttributes.addFlashAttribute("tagMap", tagMap);
+            redirectAttributes.addFlashAttribute("successMessage", "Импорт успешно выполнен");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "Не удалось импортировать CSV: " + e.getMessage());
+        }
+        return "redirect:/upload";
     }
 }

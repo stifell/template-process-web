@@ -16,6 +16,13 @@ public class TagFieldDTO {
         this.example = example;
     }
 
+    public TagFieldDTO(String tag, String value) {
+        this.tag = tag;
+        this.value = value;
+        this.hint = "";
+        this.example = "";
+    }
+
     public String getTag() {
         return tag;
     }
