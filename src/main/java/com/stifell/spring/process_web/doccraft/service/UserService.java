@@ -90,6 +90,10 @@ public class UserService implements UserDetailsService {
         userRepository.save(existingUser);
     }
 
+    public User findByUsername(String name){
+        return userRepository.findByUsername(name);
+    }
+
     public List<Role> getAllRoles() {
         return roleRepository.findAll();
     }

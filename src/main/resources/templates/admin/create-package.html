@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${package.id != null} ? 'Редактирование пакета' : 'Создание пакета'">Создание пакета</title>
+    <link rel="icon" type="image/png" href="/images/favicon-96x96.png" sizes="96x96"/>
+    <link rel="icon" type="image/svg+xml" href="/images/favicon.svg"/>
+    <link rel="shortcut icon" href="/images/favicon.ico"/>
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png"/>
+    <meta name="apple-mobile-web-app-title" content="DocCraft"/>
+    <link rel="manifest" href="/images/site.webmanifest"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+          integrity="sha384-tViUnnbYAV00FLIhhi3v/dWt3Jxw4gZQcNoSCxCIFNJVCx7/D55/wXsrNIRANwdD" crossorigin="anonymous">
+</head>
+<body>
+<header th:insert="~{fragments/header :: header}"></header>
+
+<div class="container mt-5">
+    <h2 class="mb-4" th:text="${package.id != null} ? 'Редактирование пакета' : 'Создание пакета'">
+        Создание пакета
+    </h2>
+
+    <div th:if="${errorMessage}" class="alert alert-danger" role="alert">
+        <span th:text="${errorMessage}"></span>
+    </div>
+
+    <form th:action="${package.id != null} ?
+                      @{/admin/packages/update/{id}(id=${package.id})} :
+                      @{/admin/packages/create}"
+          method="post" enctype="multipart/form-data">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+        <div class="mb-3">
+            <label class="form-label">Название пакета *</label>
+            <input type="text" class="form-control" name="name"
+                   th:value="${package.name}" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Описание</label>
+            <textarea class="form-control" name="description" rows="3"
+                      th:text="${package.description}"></textarea>
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label">Файлы документов (.docx) *</label>
+            <input type="file" class="form-control" name="files" multiple
+                   accept=".docx" th:if="${package.id == null}" required>
+
+            <div th:if="${package.id != null}">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    Для изменения файлов сначала удалите текущие файлы и загрузите новые.
+                </div>
+
+                <h5>Текущие файлы:</h5>
+                <ul>
+                    <li th:each="file : ${package.files}"
+                        th:text="${file.fileName}"
+                        class="d-flex justify-content-between align-items-center">
+                        <span th:text="${file.fileName}"></span>
+                        <a th:href="@{/admin/packages/delete-file/{id}(id=${file.id})}"
+                           class="btn btn-sm btn-outline-danger">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="mt-3">
+                    <label class="form-label">Добавить новые файлы:</label>
+                    <input type="file" class="form-control" name="newFiles" multiple accept=".docx">
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+            <span th:text="${package.id != null} ? 'Обновить пакет' : 'Создать пакет'"></span>
+        </button>
+        <a th:href="@{/admin/packages}" class="btn btn-outline-secondary">Отмена</a>
+    </form>
+</div>
+
+<footer th:insert="~{fragments/footer :: footer}"></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+        crossorigin="anonymous"></script>
+</body>
+</html>
