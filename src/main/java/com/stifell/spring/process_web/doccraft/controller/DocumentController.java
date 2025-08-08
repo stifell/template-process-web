@@ -3,6 +3,8 @@ package com.stifell.spring.process_web.doccraft.controller;
 import com.stifell.spring.process_web.doccraft.dto.FileContentDTO;
 import com.stifell.spring.process_web.doccraft.dto.GenerationRequestDTO;
 import com.stifell.spring.process_web.doccraft.dto.TagFieldDTO;
+import com.stifell.spring.process_web.doccraft.entity.PackageFile;
+import com.stifell.spring.process_web.doccraft.entity.TemplatePackage;
 import com.stifell.spring.process_web.doccraft.exception.FileProcessingException;
 import com.stifell.spring.process_web.doccraft.exception.InvalidFileTypeException;
 import com.stifell.spring.process_web.doccraft.exception.ResourceNotFoundException;
@@ -18,9 +20,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -45,21 +45,54 @@ public class DocumentController {
     private CsvExportService csvExportService;
     @Autowired
     private CsvImportService csvImportService;
+    @Autowired
+    private TemplatePackageService packageService;
 
     @GetMapping("/upload")
     public String getUploadPage(HttpServletRequest request, Model model) {
         model.addAttribute("currentURI", request.getRequestURI());
+        model.addAttribute("packages", packageService.getAllPackages());
         return "upload-page";
+    }
+
+    @ResponseBody
+    @GetMapping("/packages/{id}/files")
+    public List<String> getPackageFiles(@PathVariable Long id) {
+        return packageService.getPackageById(id)
+                .map(pkg -> pkg.getFiles().stream()
+                        .map(PackageFile::getFileName)
+                        .toList())
+                .orElse(List.of());
     }
 
     @PostMapping("/upload")
     public String handleFileUpload(@RequestParam("file") MultipartFile[] files,
+                                   @RequestParam(value = "packageId", required = false) Long packageId,
                                    @RequestParam("authorCount") int authorCount,
                                    RedirectAttributes redirectAttributes,
                                    HttpSession session) {
         try {
             session.setAttribute("authorCount", authorCount);
-            List<FileContentDTO> uploadedFiles = fileStorageService.storeFiles(files);
+            List<FileContentDTO> uploadedFiles = new ArrayList<>();
+
+            if (files != null && files.length > 0) {
+                uploadedFiles.addAll(fileStorageService.storeFiles(files));
+            }
+
+            if (packageId != null) {
+                TemplatePackage selectedPackage = packageService.getPackageById(packageId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Пакет не найден"));
+
+                for (PackageFile pf : selectedPackage.getFiles()) {
+                    uploadedFiles.add(new FileContentDTO(pf.getFileName(), pf.getContent()));
+                }
+            }
+
+            if (uploadedFiles.isEmpty()) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Не выбрано ни одного файла");
+                return "redirect:/upload";
+            }
+
             TagMap tagMap = documentService.extractTags(uploadedFiles, authorCount);
 
             session.setAttribute("generationData", new GenerationRequestDTO(tagMap, uploadedFiles));
@@ -69,11 +102,11 @@ public class DocumentController {
                             .map(FileContentDTO::getFileName)
                             .collect(Collectors.toList()));
 
+            redirectAttributes.addFlashAttribute("selectedPackageId", packageId);
             redirectAttributes.addFlashAttribute("tags", tagMap.keySet());
             redirectAttributes.addFlashAttribute("tagMap", tagMap);
             redirectAttributes.addFlashAttribute("fileUploaded", true);
-            List<TagFieldDTO> fields = tagMap.keySet().stream().map(tag ->
-            {
+            List<TagFieldDTO> fields = tagMap.keySet().stream().map(tag -> {
                 String value = tagMap.get(tag);
                 var md = tagMetadataService.find(tag);
                 return new TagFieldDTO(tag, value, md.getHint(), md.getExample());

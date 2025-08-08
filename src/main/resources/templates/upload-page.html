@@ -20,26 +20,6 @@
 <header th:insert="~{fragments/header :: header}"></header>
 <div class="container mt-5">
     <h1 class="mb-4">Загрузка шаблона документа</h1>
-    <div th:if="${not #lists.isEmpty(packages)}" class="mb-4">
-        <form id="packageSelectForm" method="post" action="/upload">
-            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-            <div class="mb-3">
-                <label for="selectedPackageId" class="form-label">Или выберите существующий пакет:</label>
-                <select class="form-select" id="selectedPackageId" name="selectedPackageId" onchange="toggleFileInput()">
-                    <option value="">-- Выберите пакет --</option>
-                    <option th:each="pkg : ${packages}"
-                            th:value="${pkg.id}"
-                            th:text="${pkg.name}"
-                            th:selected="${selectedPackageId == pkg.id}">
-                    </option>
-                </select>
-            </div>
-            <div id="packageSubmitButton" style="display: none;">
-                <button type="submit" class="btn btn-primary">Загрузить пакет</button>
-            </div>
-        </form>
-    </div>
-
     <div class="file-input-row">
         <div class="file-input-col">
             <form method="post" enctype="multipart/form-data" action="/upload">
@@ -59,10 +39,22 @@
                     </select>
                 </div>
 
+                <div class="mb-3 file-input-custom" th:if="${not #lists.isEmpty(packages)}">
+                    <label for="packageId" class="form-label">Выбрать пакет:</label>
+                    <select id="packageId" name="packageId" class="form-select">
+                        <option value="">Не использовать пакет</option>
+                        <option th:each="pkg : ${packages}"
+                                th:value="${pkg.id}"
+                                th:text="${pkg.name}"
+                                th:selected="${pkg.id} == ${selectedPackageId}">Package Name</option>
+                    </select>
+                </div>
+
                 <div class="mb-3 file-input-custom">
                     <label for="file" class="form-label">Выберите файл шаблона (только .docx):</label>
                     <input type="file" class="form-control" id="file" name="file" accept=".docx" multiple
                            onchange="updateFileList(this.files)">
+                    <small id="fileCount" class="text-muted"></small>
                 </div>
                 <button type="submit" class="btn btn-primary">Загрузить</button>
             </form>
