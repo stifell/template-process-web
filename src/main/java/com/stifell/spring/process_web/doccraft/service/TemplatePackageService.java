@@ -7,6 +7,9 @@ import com.stifell.spring.process_web.doccraft.exception.ResourceNotFoundExcepti
 import com.stifell.spring.process_web.doccraft.repository.PackageFileRepository;
 import com.stifell.spring.process_web.doccraft.repository.TemplatePackageRepository;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -20,9 +23,11 @@ import java.util.Optional;
 /**
  * @author stifell on 05.08.2025
  */
+@Slf4j
 @Service
 @Transactional
 public class TemplatePackageService {
+    private static final Logger logger = LoggerFactory.getLogger(TemplatePackageService.class);
     private final TemplatePackageRepository packageRepository;
     private final PackageFileRepository fileRepository;
     private final UserService userService;
@@ -94,10 +99,18 @@ public class TemplatePackageService {
     }
 
     public Long deleteFile(Long fileId) {
+        logger.info("Deleting file with ID: {}", fileId);
         PackageFile file = fileRepository.findById(fileId)
-                .orElseThrow(() -> new ResourceNotFoundException("Файл не найден"));
+                .orElseThrow(() -> {
+                    logger.error("File not found with ID: {}", fileId);
+                    return new ResourceNotFoundException("Файл не найден");
+                    });
         Long packageId = file.getTemplatePackage().getId();
+        logger.info("Deleting file '{}' from package ID: {}", file.getFileName(), packageId);
+
         fileRepository.deleteById(fileId);
+
+        logger.info("File deleted successfully");
         return packageId;
     }
 }

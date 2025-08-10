@@ -66,7 +66,7 @@ public class DocumentController {
     }
 
     @PostMapping("/upload")
-    public String handleFileUpload(@RequestParam("file") MultipartFile[] files,
+    public String handleFileUpload(@RequestParam(value = "file", required = false) MultipartFile[] files,
                                    @RequestParam(value = "packageId", required = false) Long packageId,
                                    @RequestParam("authorCount") int authorCount,
                                    RedirectAttributes redirectAttributes,
@@ -76,7 +76,12 @@ public class DocumentController {
             List<FileContentDTO> uploadedFiles = new ArrayList<>();
 
             if (files != null && files.length > 0) {
-                uploadedFiles.addAll(fileStorageService.storeFiles(files));
+                List<MultipartFile> nonEmptyFiles = Arrays.stream(files)
+                        .filter(f -> f != null && !f.isEmpty())
+                        .toList();
+                if (!nonEmptyFiles.isEmpty()) {
+                    uploadedFiles.addAll(fileStorageService.storeFiles(nonEmptyFiles.toArray(new MultipartFile[0])));
+                }
             }
 
             if (packageId != null) {
@@ -89,7 +94,8 @@ public class DocumentController {
             }
 
             if (uploadedFiles.isEmpty()) {
-                redirectAttributes.addFlashAttribute("errorMessage", "Не выбрано ни одного файла");
+                redirectAttributes.addFlashAttribute("errorMessage",
+                        "Не выбрано ни одного файла и пакета");
                 return "redirect:/upload";
             }
 
