@@ -3,6 +3,7 @@ package com.stifell.spring.process_web.doccraft.controller;
 import com.stifell.spring.process_web.doccraft.dto.FileContentDTO;
 import com.stifell.spring.process_web.doccraft.dto.GenerationRequestDTO;
 import com.stifell.spring.process_web.doccraft.dto.TagFieldDTO;
+import com.stifell.spring.process_web.doccraft.dto.UploadState;
 import com.stifell.spring.process_web.doccraft.entity.PackageFile;
 import com.stifell.spring.process_web.doccraft.entity.TemplatePackage;
 import com.stifell.spring.process_web.doccraft.exception.FileProcessingException;
@@ -26,6 +27,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -49,9 +51,28 @@ public class DocumentController {
     private TemplatePackageService packageService;
 
     @GetMapping("/upload")
-    public String getUploadPage(HttpServletRequest request, Model model) {
+    public String getUploadPage(HttpServletRequest request, Model model, HttpSession session) {
         model.addAttribute("currentURI", request.getRequestURI());
         model.addAttribute("packages", packageService.getAllPackages());
+
+        UploadState uploadState = (UploadState) session.getAttribute("uploadState");
+        if (uploadState != null) {
+            model.addAttribute("authorCount", uploadState.getAuthorCount());
+            model.addAttribute("selectedPackageId", uploadState.getPackageId());
+            model.addAttribute("fileNames", uploadState.getFileNames());
+            model.addAttribute("fileUploaded", uploadState.isFileUploaded());
+            model.addAttribute("fields", uploadState.getFields());
+
+            TagMap tagMap = new TagMap();
+            for (TagFieldDTO field : uploadState.getFields()) {
+                tagMap.put(field.getTag(), field.getValue());
+            }
+            model.addAttribute("tags", tagMap.keySet());
+            model.addAttribute("tagMap", tagMap);
+        } else {
+            model.addAttribute("authorCount", 1);
+            model.addAttribute("fileNames", null);
+        }
         return "upload-page";
     }
 
@@ -72,7 +93,6 @@ public class DocumentController {
                                    RedirectAttributes redirectAttributes,
                                    HttpSession session) {
         try {
-            session.setAttribute("authorCount", authorCount);
             List<FileContentDTO> uploadedFiles = new ArrayList<>();
 
             if (files != null && files.length > 0) {
@@ -101,23 +121,26 @@ public class DocumentController {
 
             TagMap tagMap = documentService.extractTags(uploadedFiles, authorCount);
 
-            session.setAttribute("generationData", new GenerationRequestDTO(tagMap, uploadedFiles));
-
-            redirectAttributes.addFlashAttribute("fileNames",
-                    uploadedFiles.stream()
+            UploadState uploadState = new UploadState();
+            uploadState.setAuthorCount(authorCount);
+            uploadState.setPackageId(packageId);
+            uploadState.setFileNames(uploadedFiles.stream()
                             .map(FileContentDTO::getFileName)
-                            .collect(Collectors.toList()));
+                            .collect(Collectors.toList())
+            );
 
-            redirectAttributes.addFlashAttribute("selectedPackageId", packageId);
-            redirectAttributes.addFlashAttribute("tags", tagMap.keySet());
-            redirectAttributes.addFlashAttribute("tagMap", tagMap);
-            redirectAttributes.addFlashAttribute("fileUploaded", true);
+            uploadState.setFileUploaded(true);
+
             List<TagFieldDTO> fields = tagMap.keySet().stream().map(tag -> {
                 String value = tagMap.get(tag);
                 var md = tagMetadataService.find(tag);
                 return new TagFieldDTO(tag, value, md.getHint(), md.getExample());
             }).collect(Collectors.toList());
-            redirectAttributes.addFlashAttribute("fields", fields);
+
+            uploadState.setFields(fields);
+            session.setAttribute("uploadState", uploadState);
+            session.setAttribute("authorCount", authorCount);
+            session.setAttribute("generationData", new GenerationRequestDTO(tagMap, uploadedFiles));
 
         } catch (InvalidFileTypeException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
@@ -179,33 +202,48 @@ public class DocumentController {
                              RedirectAttributes redirectAttributes) {
         try {
             List<TagFieldDTO> imported = csvImportService.importFromCsv(csvFile);
+            Map<String, TagFieldDTO> importedMap = imported.stream()
+                    .collect(Collectors.toMap(TagFieldDTO::getTag, Function.identity()));
+
+            UploadState uploadState = (UploadState) session.getAttribute("uploadState");
+            if (uploadState != null) {
+                List<TagFieldDTO> updatedFields = uploadState.getFields().stream()
+                        .map(field -> {
+                            TagFieldDTO importedField = importedMap.get(field.getTag());
+                            return importedField != null ?
+                                    new TagFieldDTO(
+                                            field.getTag(),
+                                            importedField.getValue(),
+                                            field.getHint(),
+                                            field.getExample()
+                                    ) :
+                                    field;
+                        })
+                        .collect(Collectors.toList());
+
+                uploadState.setFields(updatedFields);
+                session.setAttribute("uploadState", uploadState);
+            }
 
             GenerationRequestDTO generationData = (GenerationRequestDTO) session.getAttribute("generationData");
-            TagMap tagMap = generationData.getTagMap();
-
-            imported.forEach(f -> tagMap.put(f.getTag(), f.getValue()));
-            session.setAttribute("generationData", generationData);
-
-            List<TagFieldDTO> fields = imported.stream()
-                            .map(f -> {
-                                var md = tagMetadataService.find(f.getTag());
-                                return new TagFieldDTO(
-                                        f.getTag(),
-                                        f.getValue(),
-                                        md.getHint(),
-                                        md.getExample()
-                                );
-                            }).collect(Collectors.toList());
-
-            redirectAttributes.addFlashAttribute("fileUploaded", true);
-            redirectAttributes.addFlashAttribute("fields", fields);
-            redirectAttributes.addFlashAttribute("tags", tagMap.keySet());
-            redirectAttributes.addFlashAttribute("tagMap", tagMap);
+            if (generationData != null) {
+                TagMap tagMap = generationData.getTagMap();
+                imported.forEach(f -> tagMap.put(f.getTag(), f.getValue()));
+                session.setAttribute("generationData", generationData);
+            }
             redirectAttributes.addFlashAttribute("successMessage", "Импорт успешно выполнен");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage",
                     "Не удалось импортировать CSV: " + e.getMessage());
         }
+        return "redirect:/upload";
+    }
+
+    @PostMapping("/upload/reset")
+    public String resetUploadState(HttpSession session) {
+        session.removeAttribute("uploadState");
+        session.removeAttribute("generationData");
+        session.removeAttribute("authorCount");
         return "redirect:/upload";
     }
 }
