@@ -6,6 +6,7 @@ import com.stifell.spring.process_web.doccraft.dto.TagFieldDTO;
 import com.stifell.spring.process_web.doccraft.dto.UploadState;
 import com.stifell.spring.process_web.doccraft.entity.PackageFile;
 import com.stifell.spring.process_web.doccraft.entity.TemplatePackage;
+import com.stifell.spring.process_web.doccraft.entity.User;
 import com.stifell.spring.process_web.doccraft.exception.FileProcessingException;
 import com.stifell.spring.process_web.doccraft.exception.InvalidFileTypeException;
 import com.stifell.spring.process_web.doccraft.exception.ResourceNotFoundException;
@@ -26,6 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.nio.charset.StandardCharsets;
+import java.security.Principal;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -40,6 +42,8 @@ public class DocumentController {
     @Autowired
     private DocumentService documentService;
     @Autowired
+    private UserService userService;
+    @Autowired
     private ZipService zipService;
     @Autowired
     private TagMetadataService tagMetadataService;
@@ -49,6 +53,8 @@ public class DocumentController {
     private CsvImportService csvImportService;
     @Autowired
     private TemplatePackageService packageService;
+    @Autowired
+    private GenerationHistoryService historyService;
 
     @GetMapping("/upload")
     public String getUploadPage(HttpServletRequest request, Model model, HttpSession session) {
@@ -70,9 +76,10 @@ public class DocumentController {
             model.addAttribute("tags", tagMap.keySet());
             model.addAttribute("tagMap", tagMap);
         } else {
-            model.addAttribute("authorCount", 1);
-            model.addAttribute("fileNames", null);
+            uploadState = new UploadState();
+            uploadState.setAuthorCount(1);
         }
+        model.addAttribute("uploadState", uploadState);
         return "upload-page";
     }
 
@@ -154,7 +161,7 @@ public class DocumentController {
 
     @PostMapping("/generate")
     public ResponseEntity<Resource> generateDocument(@RequestParam Map<String, String> formParams,
-                                                     HttpSession session) {
+                                                     HttpSession session, Principal principal) {
 
         int authorCount = (int) session.getAttribute("authorCount");
         GenerationRequestDTO generationData =
@@ -172,6 +179,18 @@ public class DocumentController {
                 tagMap,
                 authorCount
         );
+
+        // Сохранение в историю
+        User user = userService.findByUsername(principal.getName());
+        List<String> fileNames = generationData.getFiles().stream()
+                .map(FileContentDTO::getFileName)
+                .collect(Collectors.toList());
+
+        UploadState uploadState = (UploadState) session.getAttribute("uploadState");
+        Long packageId = uploadState != null ? uploadState.getPackageId() : null;
+
+        historyService.saveHistory(user, authorCount, fileNames, tagMap,
+                generationData.getFiles(), packageId);
 
         Resource zipResource = zipService.createZipArchive(processedDocs);
 

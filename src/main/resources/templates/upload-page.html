@@ -27,15 +27,10 @@
                 <div class="mb-3 file-input-custom">
                     <label for="authorCount" class="form-label">Количество авторов:</label>
                     <select class="form-select" id="authorCount" name="authorCount">
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4</option>
-                        <option value="5">5</option>
-                        <option value="6">6</option>
-                        <option value="7">7</option>
-                        <option value="8">8</option>
-                        <option value="9">9</option>
+                        <option th:each="i : ${#numbers.sequence(1,9)}"
+                                th:value="${i}"
+                                th:text="${i}"
+                                th:selected="${i == uploadState.authorCount}"></option>
                     </select>
                 </div>
 
@@ -46,7 +41,7 @@
                         <option th:each="pkg : ${packages}"
                                 th:value="${pkg.id}"
                                 th:text="${pkg.name}"
-                                th:selected="${pkg.id} == ${selectedPackageId}">Package Name</option>
+                                th:selected="${pkg.id == uploadState.packageId}"></option>
                     </select>
                 </div>
 
