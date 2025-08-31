@@ -14,6 +14,8 @@ import com.stifell.spring.process_web.doccraft.model.TagMap;
 import com.stifell.spring.process_web.doccraft.service.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -55,6 +57,9 @@ public class DocumentController {
     private TemplatePackageService packageService;
     @Autowired
     private GenerationHistoryService historyService;
+    @Autowired
+    private PdfConversionService pdfConversionService;
+    private final Logger logger = LoggerFactory.getLogger(DocumentController.class);
 
     @GetMapping("/upload")
     public String getUploadPage(HttpServletRequest request, Model model, HttpSession session) {
@@ -161,6 +166,7 @@ public class DocumentController {
 
     @PostMapping("/generate")
     public ResponseEntity<Resource> generateDocument(@RequestParam Map<String, String> formParams,
+                                                     @RequestParam(value = "convertToPdf", required = false) boolean convertToPdf,
                                                      HttpSession session, Principal principal) {
 
         int authorCount = (int) session.getAttribute("authorCount");
@@ -180,6 +186,34 @@ public class DocumentController {
                 authorCount
         );
 
+        List<FileContentDTO> filesForZip;
+
+        if (convertToPdf) {
+            // Конвертируем DOCX в PDF
+            List<FileContentDTO> pdfDocs = new ArrayList<>();
+            for (FileContentDTO doc : processedDocs) {
+                try {
+                    byte[] pdfContent = pdfConversionService.convertDocxToPdf(doc.getContent());
+                    String pdfName = doc.getFileName().replace(".docx", ".pdf");
+                    pdfDocs.add(new FileContentDTO(pdfName, pdfContent));
+                } catch (Exception e) {
+                    logger.error("Ошибка конвертации файла {} в PDF", doc.getFileName(), e);
+                }
+            }
+
+            filesForZip = new ArrayList<>();
+
+            for (FileContentDTO doc : processedDocs) {
+                filesForZip.add(new FileContentDTO("Word/" + doc.getFileName(), doc.getContent()));
+            }
+
+            for (FileContentDTO pdf : pdfDocs) {
+                filesForZip.add(new FileContentDTO("PDF/" + pdf.getFileName(), pdf.getContent()));
+            }
+        } else {
+            filesForZip = processedDocs;
+        }
+
         // Сохранение в историю
         User user = userService.findByUsername(principal.getName());
         List<String> fileNames = generationData.getFiles().stream()
@@ -192,7 +226,7 @@ public class DocumentController {
         historyService.saveHistory(user, authorCount, fileNames, tagMap,
                 generationData.getFiles(), packageId);
 
-        Resource zipResource = zipService.createZipArchive(processedDocs);
+        Resource zipResource = zipService.createZipArchive(filesForZip);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=documents.zip")

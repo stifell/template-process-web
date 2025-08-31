@@ -110,6 +110,40 @@
                            class="form-control"/>
                 </div>
             </div>
+            <div class="mb-4">
+                <div class="card border-2 shadow-sm">
+                    <div class="card-body p-3">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3 p-2 bg-light rounded">
+                                    <i class="bi bi-file-earmark-pdf text-danger" style="font-size: 1.5rem;"></i>
+                                </div>
+                                <div>
+                                    <h5 class="card-title mb-1 d-flex align-items-center">
+                                        <span>Конвертировать в PDF</span>
+                                        <i class="bi bi-info-circle ms-2 text-muted"
+                                           data-bs-toggle="tooltip"
+                                           data-bs-placement="top"
+                                           title="Создаст ZIP-архив со структурой: Word/ (DOCX файлы) и PDF/ (конвертированные файлы)"></i>
+                                    </h5>
+                                    <p class="card-text text-muted mb-0 small">
+                                        При выборе опции архив будет содержать папки Word и PDF с соответствующими файлами
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="form-check form-switch">
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       id="convertToPdf"
+                                       name="convertToPdf"
+                                       role="switch">
+                                <label class="form-check-label visually-hidden" for="convertToPdf">Конвертировать в PDF</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <button type="submit" class="btn btn-success">Сгенерировать</button>
         </form>
     </div>
