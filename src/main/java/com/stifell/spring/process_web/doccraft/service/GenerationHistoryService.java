@@ -11,6 +11,7 @@ import com.stifell.spring.process_web.doccraft.model.TagMap;
 import com.stifell.spring.process_web.doccraft.repository.GenerationHistoryRepository;
 import com.stifell.spring.process_web.doccraft.repository.HistoryFileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -78,8 +79,15 @@ public class GenerationHistoryService {
         return historyRepo.findByUserOrderByGenerationDateDesc(user);
     }
 
-    public GenerationHistory getHistoryById(long id) {
-        return historyRepo.findById(id).orElseThrow(() -> new RuntimeException("История не найдена"));
+    public GenerationHistory getHistoryByIdForUser(long id, User user) {
+        GenerationHistory history = historyRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("История не найдена"));
+
+        if (!history.getUser().getId().equals(user.getId())) {
+            throw new AccessDeniedException("У вас нет доступа к этой истории");
+        }
+
+        return history;
     }
 
     public List<HistoryFile> getHistoryFiles(long historyId) {

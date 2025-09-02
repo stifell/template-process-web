@@ -61,8 +61,10 @@ public class HistoryController {
     }
 
     @GetMapping("/{id}")
-    public String historyDetail(@PathVariable Long id, Model model, HttpSession session) {
-        GenerationHistory history = historyService.getHistoryById(id);
+    public String historyDetail(@PathVariable Long id, Model model, HttpSession session, Principal principal) {
+        User currentUser = userService.findByUsername(principal.getName());
+
+        GenerationHistory history = historyService.getHistoryByIdForUser(id, currentUser);
         List<HistoryFile> files = historyService.getHistoryFiles(id);
 
         UploadState uploadState = new UploadState();
