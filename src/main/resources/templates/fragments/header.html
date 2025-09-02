@@ -3,14 +3,14 @@
 
 <div th:fragment="header">
     <div class="container">
-        <header class="d-flex flex-wrap align-items-center justify-content-center justify-content-md-between py-3 mb-4 border-bottom">
-            <div class="d-flex align-items-center me-4">
+        <header class="d-flex flex-wrap align-items-center justify-content-between py-3 mb-4 border-bottom">
+            <div class="d-flex align-items-center col-md-3">
                 <a href="/" class="d-flex align-items-center link-body-emphasis text-decoration-none">
                     <img th:src="@{/images/logo.png}" alt="DocCraft Logo" style="height: 60px;" class="me-2">
                 </a>
             </div>
 
-            <ul class="nav col-12 col-md-auto mb-2 justify-content-center mb-md-0">
+            <ul class="nav col-md-6 mb-2 justify-content-center mb-md-0">
                 <li><a href="/" class="nav-link px-2"
                        th:classappend="${currentURI == '/'} ? 'link-secondary'">Главная страница</a></li>
                 <li><a href="/upload" class="nav-link px-2"
@@ -40,14 +40,12 @@
                 </li>
             </ul>
 
-            <div class="col-md-3 text-end"
-                 sec:authorize="isAnonymous()">
+            <div class="col-md-3 d-flex justify-content-end" sec:authorize="isAnonymous()">
                 <a href="/login" class="btn btn-outline-primary me-2">Войти</a>
                 <a href="/registration" class="btn btn-primary">Зарегистрироваться</a>
             </div>
 
-            <div class="col-md-3 text-end"
-                 sec:authorize="isAuthenticated()">
+            <div class="col-md-3 d-flex justify-content-end align-items-center" sec:authorize="isAuthenticated()">
                 <span class="me-3"><strong sec:authentication="name"></strong></span>
                 <form th:action="@{/logout}" method="post" class="d-inline">
                     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
