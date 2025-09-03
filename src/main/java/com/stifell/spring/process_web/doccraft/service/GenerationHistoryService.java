@@ -6,7 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stifell.spring.process_web.doccraft.dto.FileContentDTO;
 import com.stifell.spring.process_web.doccraft.entity.GenerationHistory;
 import com.stifell.spring.process_web.doccraft.entity.HistoryFile;
+import com.stifell.spring.process_web.doccraft.entity.TemplatePackage;
 import com.stifell.spring.process_web.doccraft.entity.User;
+import com.stifell.spring.process_web.doccraft.exception.ResourceNotFoundException;
 import com.stifell.spring.process_web.doccraft.model.TagMap;
 import com.stifell.spring.process_web.doccraft.repository.GenerationHistoryRepository;
 import com.stifell.spring.process_web.doccraft.repository.HistoryFileRepository;
@@ -14,7 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -25,12 +26,15 @@ public class GenerationHistoryService {
     private final GenerationHistoryRepository historyRepo;
     private final HistoryFileRepository fileRepo;
     private final ObjectMapper objectMapper;
+    private final TemplatePackageService packageService;
 
     @Autowired
-    public GenerationHistoryService(GenerationHistoryRepository historyRepo, HistoryFileRepository fileRepo, ObjectMapper objectMapper) {
+    public GenerationHistoryService(GenerationHistoryRepository historyRepo, HistoryFileRepository fileRepo,
+                                    ObjectMapper objectMapper, TemplatePackageService packageService) {
         this.historyRepo = historyRepo;
         this.fileRepo = fileRepo;
         this.objectMapper = objectMapper;
+        this.packageService = packageService;
     }
 
 
@@ -43,16 +47,17 @@ public class GenerationHistoryService {
             history.setPackageId(packageId);
             history.setFileNames(objectMapper.writeValueAsString(fileNames));
             history.setTagMapJson(objectMapper.writeValueAsString(tagMap));
-            //TODO: подтягивать файлы из пакетов (при выборе), а не сохранять их в БД
 
             GenerationHistory savedHistory = historyRepo.save(history);
 
-            for (FileContentDTO file : files) {
-                HistoryFile historyFile = new HistoryFile();
-                historyFile.setHistory(savedHistory);
-                historyFile.setFileName(file.getFileName());
-                historyFile.setContent(file.getContent());
-                fileRepo.save(historyFile);
+            if (packageId == null) {
+                for (FileContentDTO file : files) {
+                    HistoryFile historyFile = new HistoryFile();
+                    historyFile.setHistory(savedHistory);
+                    historyFile.setFileName(file.getFileName());
+                    historyFile.setContent(file.getContent());
+                    fileRepo.save(historyFile);
+                }
             }
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Ошибка сериализации тегов", e);
@@ -90,7 +95,17 @@ public class GenerationHistoryService {
         return history;
     }
 
-    public List<HistoryFile> getHistoryFiles(long historyId) {
-        return fileRepo.findByHistoryId(historyId);
+    public List<FileContentDTO> getHistoryFiles(GenerationHistory history) {
+        if (history.getPackageId() != null) {
+            TemplatePackage pkg = packageService.getPackageById(history.getPackageId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Пакет не найден"));
+            return pkg.getFiles().stream()
+                    .map(f -> new FileContentDTO(f.getFileName(), f.getContent()))
+                    .toList();
+        } else {
+            return fileRepo.findByHistoryId(history.getId()).stream()
+                    .map(f -> new FileContentDTO(f.getFileName(), f.getContent()))
+                    .toList();
+        }
     }
 }

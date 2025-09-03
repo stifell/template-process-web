@@ -65,7 +65,7 @@ public class HistoryController {
         User currentUser = userService.findByUsername(principal.getName());
 
         GenerationHistory history = historyService.getHistoryByIdForUser(id, currentUser);
-        List<HistoryFile> files = historyService.getHistoryFiles(id);
+        List<FileContentDTO> files = historyService.getHistoryFiles(history);
 
         UploadState uploadState = new UploadState();
         uploadState.setAuthorCount(history.getAuthorCount());
@@ -85,10 +85,8 @@ public class HistoryController {
         uploadState.setFields(fields);
 
         session.setAttribute("uploadState", uploadState);
-        session.setAttribute("generationData", new GenerationRequestDTO(tagMap, files.stream()
-                .map(f -> new FileContentDTO(f.getFileName(), f.getContent()))
-                .collect(Collectors.toList())
-        ));
+        session.setAttribute("authorCount", history.getAuthorCount());
+        session.setAttribute("generationData", new GenerationRequestDTO(tagMap, files));
 
         return "redirect:/upload";
     }
