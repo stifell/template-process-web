@@ -55,4 +55,4 @@ DocCraft - это веб-приложение, позволяющее автом
 
 ## Лицензия
 
-Этот проект лицензирован в соответствии с лицензией MIT. Подробнее см. в файле [LICENSE](https://gitgihub.com/stifell/template-process-web/blob/master/LICENSE).
+Этот проект лицензирован в соответствии с лицензией MIT. Подробнее см. в файле [LICENSE](https://github.com/stifell/template-process-web/blob/master/LICENSE).
